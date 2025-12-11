@@ -24,4 +24,17 @@ public class Book extends LibraryItem {
     public String toString() {
         return super.toString() + " by " + author;
     }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Book book = (Book) o;
+        return getId().equals(book.getId()); // Assuming getId() returns ISBN
+    }
+
+    @Override
+    public int hashCode() {
+        return getId().hashCode();
+    }
 }
