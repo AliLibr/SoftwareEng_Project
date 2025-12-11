@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +30,6 @@ class RepositoryTest {
         Book book = new Book("1", "Title", "Author");
         itemRepo.save(book);
         
-        // REFACTOR: Use orElseThrow() for cleaner assertion of item presence and retrieval
         LibraryItem found = itemRepo.findById("1")
                                     .orElseThrow(() -> new AssertionError("Item not found"));
         assertEquals("Title", found.getTitle());
@@ -57,7 +55,6 @@ class RepositoryTest {
         User user = new User("u1", "Bob", "secret123");
         userRepo.save(user);
         
-        // REFACTOR: Use orElseThrow() for cleaner assertion of user presence and retrieval
         User found = userRepo.findById("u1")
                              .orElseThrow(() -> new AssertionError("User not found"));
         assertEquals("Bob", found.getName());

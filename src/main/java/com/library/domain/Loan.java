@@ -1,9 +1,11 @@
 package com.library.domain;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 
+public class Loan implements Serializable {
+    private static final long serialVersionUID = 1L;
 
-public class Loan {
     private LibraryItem item;
     private User user;
     private LocalDate borrowDate;

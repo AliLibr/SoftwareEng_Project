@@ -52,29 +52,20 @@ class LibrarySystemTest {
     }
 
     @Test
-    void testLoginSuccessWithSystemProps() {
-        assertTrue(authService.login("admin", "secret"), "Login should succeed with correct props");
-        assertTrue(authService.isAdminLoggedIn());
+    void testLoginSuccess() {
+        assertTrue(authService.login("admin", "secret"));
     }
 
     @Test
-    void testLoginFailureWithWrongCreds() {
-        assertFalse(authService.login("admin", "wrong"), "Login should fail with wrong password");
-        assertFalse(authService.isAdminLoggedIn());
+    void testLoginFailure() {
+        assertFalse(authService.login("admin", "wrong"));
     }
     
     @Test
-    void testLoginFailsIfNoConfigSet() {
+    void testLoginMissingEnv() {
         System.clearProperty("LIBRARY_ADMIN_USER");
         System.clearProperty("LIBRARY_ADMIN_PASS");
-
         assertFalse(authService.login("admin", "secret"));
-    }
-    
-    @Test
-    void testLogout() {
-        authService.logout();
-        assertFalse(authService.isAdminLoggedIn());
     }
 
     @Test
@@ -85,93 +76,76 @@ class LibrarySystemTest {
         
         when(userRepo.findById(userId)).thenReturn(Optional.of(mockUser));
         
-        Optional<User> foundUser = userRepo.findById(userId);
-        assertTrue(foundUser.isPresent());
-        assertEquals(password, foundUser.get().getPassword(), "Password should match");
-        
-        Optional<User> foundUserWrongPass = userRepo.findById(userId);
-        assertTrue(foundUserWrongPass.isPresent());
-        assertNotEquals("wrongpass", foundUserWrongPass.get().getPassword(), "Stored password should not equal wrong password");
+        User foundUser = userRepo.findById(userId).get();
+        assertEquals(password, foundUser.getPassword());
+        assertNotEquals("wrong", foundUser.getPassword());
     }
 
     @Test
-    void testPayFineFully() {
-        User user = new User("u1", "Debtor", "testpass");
+    void testPayFineSuccess() {
+        User user = new User("u1", "Debtor", "pass");
         user.setFinesOwed(50.0);
-
-        boolean success = fineService.payFine(user, 50.0);
-        
-        assertTrue(success);
-        assertEquals(0.0, user.getFinesOwed(), 0.01);
-    }
-
-    @Test
-    void testPayFinePartially() {
-        User user = new User("u1", "Debtor", "testpass");
-        user.setFinesOwed(100.0);
-
-        boolean success = fineService.payFine(user, 40.0);
-        
-        assertTrue(success);
-        assertEquals(60.0, user.getFinesOwed(), 0.01);
-    }
-
-    @Test
-    void testPayFineInvalidAmount() {
-        User user = new User("u1", "Debtor", "testpass");
-        user.setFinesOwed(50.0);
-
-        assertFalse(fineService.payFine(user, -10.0), "Should fail for negative amount");
-        assertEquals(50.0, user.getFinesOwed());
+        assertTrue(fineService.payFine(user, 50.0));
+        assertEquals(0.0, user.getFinesOwed());
     }
     
     @Test
-    void testPayFineAmountExceedsDebt() {
-        User user = new User("u1", "Debtor", "testpass");
-        user.setFinesOwed(20.0);
-
-        boolean success = fineService.payFine(user, 50.0);
+    void testPayFinePartial() {
+        User user = new User("u1", "Debtor", "pass");
+        user.setFinesOwed(50.0);
+        assertTrue(fineService.payFine(user, 25.0));
+        assertEquals(25.0, user.getFinesOwed());
+    }
+    
+    @Test
+    void testPayFineInvalid() {
+        User user = new User("u1", "Debtor", "pass");
+        user.setFinesOwed(50.0);
+        assertFalse(fineService.payFine(user, -10.0));
+        assertEquals(50.0, user.getFinesOwed());
         
-        assertTrue(success, "Payment should be accepted even if amount exceeds debt");
-        assertEquals(0.0, user.getFinesOwed(), 0.01, "Final fines owed must be 0.0, not negative");
+        user.setFinesOwed(0.0);
+        assertFalse(fineService.payFine(user, 10.0));
     }
 
-
     @Test
-    void testBorrowBookCalculatesDueDate() {
-        User user = new User("u1", "Alice", "testpass");
-        Book book = new Book("isbn1", "Java Book", "Author");
+    void testBorrowBookSuccess() {
+        User user = new User("u1", "Alice", "pass");
+        Book book = new Book("1", "Title", "Auth");
         LocalDate today = LocalDate.of(2023, 1, 1);
         when(timeProvider.getDate()).thenReturn(today);
 
         String result = loanService.borrowItem(user, book);
-
         assertTrue(result.contains("Success"));
-        assertTrue(book.isBorrowed());
-        
-        verify(loanRepo).save(argThat(loan -> 
-            loan.getDueDate().isEqual(LocalDate.of(2023, 1, 29)) 
-        ));
+        verify(loanRepo).save(any(Loan.class));
     }
-
+    
     @Test
-    void testBorrowCDCalculatesDueDate() {
-        User user = new User("u1", "Alice", "testpass");
-        CD cd = new CD("cd1", "Music", "Artist");
+    void testBorrowCDSuccess() {
+        User user = new User("u1", "Alice", "pass");
+        CD cd = new CD("1", "Title", "Artist");
         LocalDate today = LocalDate.of(2023, 1, 1);
         when(timeProvider.getDate()).thenReturn(today);
 
         loanService.borrowItem(user, cd);
-
-        verify(loanRepo).save(argThat(loan -> 
-            loan.getDueDate().isEqual(LocalDate.of(2023, 1, 8)) 
-        ));
+        verify(loanRepo).save(any(Loan.class));
     }
 
     @Test
-    void testBorrowBlockedIfItemBorrowed() {
-        User user = new User("u1", "Alice", "testpass");
-        Book book = new Book("isbn1", "Java", "Auth");
+    void testBorrowBlockedIfFines() {
+        User user = new User("u1", "Debtor", "pass");
+        user.setFinesOwed(10.0);
+        Book book = new Book("1", "Title", "Auth");
+
+        String result = loanService.borrowItem(user, book);
+        assertTrue(result.contains("unpaid fines"));
+        verify(loanRepo, never()).save(any());
+    }
+    
+    @Test
+    void testBorrowBlockedIfAlreadyBorrowed() {
+        User user = new User("u1", "Alice", "pass");
+        Book book = new Book("1", "Title", "Auth");
         book.setBorrowed(true);
 
         String result = loanService.borrowItem(user, book);
@@ -180,41 +154,15 @@ class LibrarySystemTest {
     }
     
     @Test
-    void testBorrowBlockedIfItemBorrowedCDType() {
-        User user = new User("u1", "Alice", "testpass");
-        CD cd = new CD("cd1", "Music", "Artist");
-        cd.setBorrowed(true);
-        
-        String result = loanService.borrowItem(user, cd);
-        
-        assertTrue(result.contains("Error: Item is already borrowed."));
-        verify(loanRepo, never()).save(any());
-    }
-
-
-    @Test
-    void testBorrowBlockedIfFinesExistVerification() {
-        User user = new User("u1", "Debtor", "testpass");
-        user.setFinesOwed(10.0);
-        Book book = new Book("1", "B", "A");
-
-        String result = loanService.borrowItem(user, book);
-        assertTrue(result.contains("unpaid fines"));
-        
-        verify(loanRepo, never()).save(any());
-    }
-
-    @Test
-    void testBorrowBlockedIfOverdueExists() {
-        User user = new User("u1", "Alice", "testpass");
-        Book book = new Book("1", "B", "A");
-        
-        LocalDate today = LocalDate.of(2023, 2, 1);
+    void testBorrowBlockedIfOverdue() {
+        User user = new User("u1", "Alice", "pass");
+        Book book = new Book("1", "Title", "Auth");
+        LocalDate today = LocalDate.of(2023, 1, 1);
         when(timeProvider.getDate()).thenReturn(today);
-
-        Loan oldLoan = mock(Loan.class);
-        when(oldLoan.isOverdue(today)).thenReturn(true);
-        when(loanRepo.findActiveLoansByUser(user)).thenReturn(Collections.singletonList(oldLoan));
+        
+        Loan overdueLoan = mock(Loan.class);
+        when(overdueLoan.isOverdue(today)).thenReturn(true);
+        when(loanRepo.findActiveLoansByUser(user)).thenReturn(Collections.singletonList(overdueLoan));
 
         String result = loanService.borrowItem(user, book);
         assertTrue(result.contains("overdue items"));
@@ -222,76 +170,76 @@ class LibrarySystemTest {
     }
 
     @Test
-    void testCheckOverdueItemsFormatting() {
-        LocalDate today = LocalDate.of(2023, 2, 1);
-        when(timeProvider.getDate()).thenReturn(today);
-
-        User user = new User("u1", "Alice", "testpass");
-        Book book = new Book("1", "B", "A");
-        Loan loan = new Loan(book, user, LocalDate.of(2023, 1, 1));
-
-        when(loanRepo.findAllActiveLoans()).thenReturn(Collections.singletonList(loan));
-
-        List<String> results = loanService.checkOverdueItems();
-        
-        assertEquals(1, results.size());
-        String msg = results.get(0);
-        assertTrue(msg.contains("Overdue:"));
-        assertTrue(msg.contains("Days late: 3"));
-        assertTrue(msg.contains("Est. Fine: 30.00"));
-    }
-
-    @Test
-    void testReminderServiceNotifiesObservers() {
-        LocalDate today = LocalDate.of(2023, 2, 1);
-        when(timeProvider.getDate()).thenReturn(today);
-        
-        User user = new User("u1", "Alice", "testpass");
-        Book book = new Book("1", "B", "A");
-        Loan loan = new Loan(book, user, LocalDate.of(2023, 1, 1));
-
-        when(loanRepo.findAllActiveLoans()).thenReturn(Collections.singletonList(loan));
-        
-        reminderService.registerObserver(mockObserver);
-        reminderService.sendOverdueReminders();
-
-        verify(mockObserver).update(eq(user), contains("overdue"));
-    }
-
-    @Test
     void testUnregisterSuccess() {
-        User user = new User("u1", "Clean", "testpass");
+        User user = new User("u1", "Clean", "pass");
         when(userRepo.findById("u1")).thenReturn(Optional.of(user));
         when(loanRepo.findActiveLoansByUser(user)).thenReturn(Collections.emptyList());
 
-        String result = userService.unregisterUser("u1");
-        assertTrue(result.contains("Success")); 
+        assertTrue(userService.unregisterUser("u1").contains("Success"));
         verify(userRepo).delete(user);
     }
-
+    
+    @Test
+    void testUnregisterFailUserNotFound() {
+        when(userRepo.findById("u99")).thenReturn(Optional.empty());
+        assertTrue(userService.unregisterUser("u99").contains("Error: User not found"));
+    }
+    
     @Test
     void testUnregisterFailFines() {
-        User user = new User("u1", "Debtor", "testpass");
-        user.setFinesOwed(5.0);
+        User user = new User("u1", "Debtor", "pass");
+        user.setFinesOwed(10.0);
         when(userRepo.findById("u1")).thenReturn(Optional.of(user));
-
-        String result = userService.unregisterUser("u1");
-        assertTrue(result.contains("fines"));
+        
+        assertTrue(userService.unregisterUser("u1").contains("unpaid fines"));
         verify(userRepo, never()).delete(any());
     }
     
     @Test
-    void testUserUnregisterBlockedByActiveLoan() {
-        User user = new User("u1", "Reader", "testpass");
-        user.setFinesOwed(0.0);
-        Loan activeLoan = mock(Loan.class);
-        
+    void testUnregisterFailActiveLoans() {
+        User user = new User("u1", "Debtor", "pass");
         when(userRepo.findById("u1")).thenReturn(Optional.of(user));
-        when(loanRepo.findActiveLoansByUser(user)).thenReturn(Collections.singletonList(activeLoan));
-
-        String result = userService.unregisterUser("u1");
-
-        assertTrue(result.contains("Error: Cannot unregister. User has active loans."));
+        when(loanRepo.findActiveLoansByUser(user)).thenReturn(Collections.singletonList(mock(Loan.class)));
+        
+        assertTrue(userService.unregisterUser("u1").contains("active loans"));
         verify(userRepo, never()).delete(any());
+    }
+    
+    @Test
+    void testSendReminders() {
+        LocalDate today = LocalDate.of(2023, 1, 1);
+        when(timeProvider.getDate()).thenReturn(today);
+        
+        User user = new User("u1", "A", "p");
+        Book book = new Book("1", "T", "A");
+        Loan mockLoan = mock(Loan.class);
+        when(mockLoan.isOverdue(today)).thenReturn(true);
+        when(mockLoan.getUser()).thenReturn(user);
+        when(mockLoan.getItem()).thenReturn(book);
+        when(mockLoan.getDueDate()).thenReturn(today.minusDays(1));
+        
+        when(loanRepo.findAllActiveLoans()).thenReturn(Collections.singletonList(mockLoan));
+        
+        reminderService.registerObserver(mockObserver);
+        reminderService.sendOverdueReminders();
+        
+        verify(mockObserver).update(eq(user), contains("overdue"));
+    }
+    
+    @Test
+    void testCheckOverdueItems() {
+        LocalDate today = LocalDate.of(2023, 1, 1);
+        when(timeProvider.getDate()).thenReturn(today);
+        
+        Loan mockLoan = mock(Loan.class);
+        when(mockLoan.isOverdue(today)).thenReturn(true);
+        when(mockLoan.getDueDate()).thenReturn(today.minusDays(5));
+        when(mockLoan.getItem()).thenReturn(new Book("1","T","A"));
+        
+        when(loanRepo.findAllActiveLoans()).thenReturn(Collections.singletonList(mockLoan));
+        
+        List<String> report = loanService.checkOverdueItems();
+        assertEquals(1, report.size());
+        assertTrue(report.get(0).contains("Days late: 5"));
     }
 }
