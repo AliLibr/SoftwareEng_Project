@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.library.domain.CD;
 import com.library.domain.LibraryItem;
 import com.library.domain.Loan;
 import com.library.domain.User;
@@ -95,5 +96,13 @@ class LoanTest {
         loan.returnItem();
 
         assertFalse(loan.isActive(), "Loan should be inactive after returning.");
+    }
+    
+    @Test
+    void testCDArtistGetter() {
+        String expectedArtist = "Pink Floyd";
+        CD cd = new CD("1", "Dark Side of the Moon", expectedArtist);
+        
+        assertEquals(expectedArtist, cd.getArtist(), "getArtist() should return the correct artist name");
     }
 }
