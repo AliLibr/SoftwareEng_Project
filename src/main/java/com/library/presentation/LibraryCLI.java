@@ -40,9 +40,17 @@ public class LibraryCLI {
     }
 
     public static void main(String[] args) {
+        seedData(); // Added back because in-memory storage is empty on restart
         LOGGER.info("=== Library Management System ===");
         runMainMenu();
         scanner.close();
+    }
+
+    private static void seedData() {
+        itemRepo.save(new Book("b1", "Clean Code", "Robert C. Martin"));
+        itemRepo.save(new CD("cd1", "Dark Side of the Moon", "Pink Floyd"));
+        userRepo.save(new User("u1", "Alice Student", "pass1"));
+        userRepo.save(new User("u2", "Bob Builder", "pass2"));
     }
 
     private static void runMainMenu() {
