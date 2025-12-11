@@ -33,6 +33,10 @@ public class LibraryCLI {
     private static final Scanner scanner = new Scanner(System.in);
     private static User currentUser = null;
 
+    private static void printPrompt(String message) {
+        System.out.print(message);
+    }
+
     public static void main(String[] args) {
         LOGGER.info("=== Library Management System ===");
         runMainMenu();
@@ -53,18 +57,18 @@ public class LibraryCLI {
     }
 
     private static boolean handleGuestMenu() {
-        System.out.println("\n--- Main Menu ---");
-        System.out.println("1. Admin Login");
-        System.out.println("2. User Login");
-        System.out.println("3. Sign Up (New User)");
-        System.out.println("0. Exit");
-        System.out.print("Choice: ");
+        LOGGER.info("\n--- Main Menu ---");
+        LOGGER.info("1. Admin Login");
+        LOGGER.info("2. User Login");
+        LOGGER.info("3. Sign Up (New User)");
+        LOGGER.info("0. Exit");
+        printPrompt("Choice: ");
         
         String choice = scanner.nextLine();
         switch (choice) {
             case "1":
-                System.out.print("Username: "); String u = scanner.nextLine();
-                System.out.print("Password: "); String p = scanner.nextLine();
+                printPrompt("Username: "); String u = scanner.nextLine();
+                printPrompt("Password: "); String p = scanner.nextLine();
                 if (authService.login(u, p)) {
                     LOGGER.info("Admin logged in successfully.");
                 } else {
@@ -86,8 +90,8 @@ public class LibraryCLI {
     }
 
     private static void handleUserSignUp() {
-        System.out.println("\n--- User Sign Up ---");
-        System.out.print("Enter Desired User ID: ");
+        LOGGER.info("\n--- User Sign Up ---");
+        printPrompt("Enter Desired User ID: ");
         String id = scanner.nextLine();
         
         if (userRepo.findById(id).isPresent()) {
@@ -95,9 +99,9 @@ public class LibraryCLI {
             return;
         }
         
-        System.out.print("Enter Name: ");
+        printPrompt("Enter Name: ");
         String name = scanner.nextLine();
-        System.out.print("Enter Password: ");
+        printPrompt("Enter Password: ");
         String password = scanner.nextLine();
         
         User newUser = new User(id, name, password);
@@ -106,9 +110,9 @@ public class LibraryCLI {
     }
 
     private static void handleUserLogin() {
-        System.out.print("Enter User ID: ");
+        printPrompt("Enter User ID: ");
         String uid = scanner.nextLine();
-        System.out.print("Enter Password: ");
+        printPrompt("Enter Password: ");
         String pass = scanner.nextLine();
         
         userRepo.findById(uid).ifPresentOrElse(
@@ -125,27 +129,27 @@ public class LibraryCLI {
     }
 
     private static void handleAdminMenu() {
-        System.out.println("\n--- Admin Menu ---");
-        System.out.println("1. Add Book");
-        System.out.println("2. Add CD");
-        System.out.println("3. Check Overdues");
-        System.out.println("4. Send Reminders");
-        System.out.println("5. Unregister User");
-        System.out.println("6. Logout");
-        System.out.print("Choice: ");
+        LOGGER.info("\n--- Admin Menu ---");
+        LOGGER.info("1. Add Book");
+        LOGGER.info("2. Add CD");
+        LOGGER.info("3. Check Overdues");
+        LOGGER.info("4. Send Reminders");
+        LOGGER.info("5. Unregister User");
+        LOGGER.info("6. Logout");
+        printPrompt("Choice: ");
 
         switch (scanner.nextLine()) {
             case "1":
-                System.out.print("ISBN: "); String isbn = scanner.nextLine();
-                System.out.print("Title: "); String title = scanner.nextLine();
-                System.out.print("Author: "); String author = scanner.nextLine();
+                printPrompt("ISBN: "); String isbn = scanner.nextLine();
+                printPrompt("Title: "); String title = scanner.nextLine();
+                printPrompt("Author: "); String author = scanner.nextLine();
                 itemRepo.save(new Book(isbn, title, author));
                 LOGGER.info("Book added.");
                 break;
             case "2":
-                System.out.print("Serial: "); String serial = scanner.nextLine();
-                System.out.print("Title: "); String t = scanner.nextLine();
-                System.out.print("Artist: "); String artist = scanner.nextLine();
+                printPrompt("Serial: "); String serial = scanner.nextLine();
+                printPrompt("Title: "); String t = scanner.nextLine();
+                printPrompt("Artist: "); String artist = scanner.nextLine();
                 itemRepo.save(new CD(serial, t, artist));
                 LOGGER.info("CD added.");
                 break;
@@ -159,8 +163,8 @@ public class LibraryCLI {
                 reminderService.sendOverdueReminders();
                 break;
             case "5":
-                System.out.print("User ID to remove: ");
-                System.out.println(userService.unregisterUser(scanner.nextLine()));
+                printPrompt("User ID to remove: ");
+                LOGGER.info(userService.unregisterUser(scanner.nextLine())); 
                 break;
             case "6":
                 authService.logout();
@@ -171,16 +175,16 @@ public class LibraryCLI {
     }
 
     private static void handleUserMenu() {
-        System.out.println("\n--- User Menu (" + currentUser.getName() + ") ---");
-        System.out.println("1. Search Item (US1.4)");
-        System.out.println("2. Borrow Item");
-        System.out.println("3. Pay Fine");
-        System.out.println("4. Logout");
-        System.out.print("Choice: ");
+        LOGGER.info(() -> "\n--- User Menu (" + currentUser.getName() + ") ---");
+        LOGGER.info("1. Search Item (US1.4)");
+        LOGGER.info("2. Borrow Item");
+        LOGGER.info("3. Pay Fine");
+        LOGGER.info("4. Logout");
+        printPrompt("Choice: ");
 
         switch (scanner.nextLine()) {
             case "1":
-                System.out.print("Enter search term (Title/Author/ID): ");
+                printPrompt("Enter search term (Title/Author/ID): ");
                 String query = scanner.nextLine();
                 List<LibraryItem> results = itemRepo.searchByTitle(query); 
                 
@@ -192,16 +196,16 @@ public class LibraryCLI {
                 }
                 break;
             case "2":
-                System.out.print("Enter Item ID to borrow: ");
+                printPrompt("Enter Item ID to borrow: ");
                 itemRepo.findById(scanner.nextLine()).ifPresentOrElse(
-                    item -> System.out.println(loanService.borrowItem(currentUser, item)),
+                    item -> LOGGER.info(loanService.borrowItem(currentUser, item)),
                     () -> LOGGER.warning("Item not found.")
                 );
                 break;
             case "3":
-                System.out.println("Current Fines: " + currentUser.getFinesOwed());
+                LOGGER.info(() -> "Current Fines: " + currentUser.getFinesOwed());
                 if (currentUser.getFinesOwed() > 0) {
-                    System.out.print("Amount to pay: ");
+                    printPrompt("Amount to pay: ");
                     try {
                         double amount = Double.parseDouble(scanner.nextLine());
                         if (fineService.payFine(currentUser, amount)) {

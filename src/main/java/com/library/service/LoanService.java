@@ -9,9 +9,7 @@ import com.library.domain.Loan;
 import com.library.domain.User;
 import com.library.repository.LoanRepository;
 
-/**
- * Service for managing loans and borrowing rules.
- */
+
 public class LoanService {
 
     private final LoanRepository loanRepository;

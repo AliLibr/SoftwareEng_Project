@@ -1,31 +1,22 @@
 package com.library.service;
 
-/**
- * Service for Admin Authentication.
- * SECURITY UPDATE: Checks System Properties first (for testing), then Env Vars.
- * This prevents hardcoding passwords in the source code.
- */
+import java.util.logging.Logger;
+
 public class AuthService {
     
+    private static final Logger LOGGER = Logger.getLogger(AuthService.class.getName());
     private boolean isLoggedIn = false;
 
-    /**
-     * Attempts to log in using credentials from the environment.
-     * @param username Input username
-     * @param password Input password
-     * @return true if credentials match the environment settings
-     */
     public boolean login(String username, String password) {
-        // 1. Try to get credentials from System Properties (Used by JUnit Tests)
         String validUser = System.getProperty("LIBRARY_ADMIN_USER");
         String validPass = System.getProperty("LIBRARY_ADMIN_PASS");
 
-        // 2. If not found, try Environment Variables (Used by Real App/Eclipse Run Config)
         if (validUser == null) validUser = System.getenv("LIBRARY_ADMIN_USER");
         if (validPass == null) validPass = System.getenv("LIBRARY_ADMIN_PASS");
 
-        // Safety check: If no config is found anywhere, fail securely.
         if (validUser == null || validPass == null) {
+            LOGGER.severe("ERROR: Could not find credentials.");
+            LOGGER.severe("Please set LIBRARY_ADMIN_USER and LIBRARY_ADMIN_PASS in Eclipse Run Configurations -> Environment.");
             return false;
         }
 

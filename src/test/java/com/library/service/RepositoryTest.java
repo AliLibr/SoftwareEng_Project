@@ -12,10 +12,7 @@ import org.junit.jupiter.api.Test;
 import com.library.domain.*;
 import com.library.repository.*;
 
-/**
- * Tests for the Repository Layer (Data Storage).
- * Raises code coverage by testing CRUD operations.
- */
+
 class RepositoryTest {
 
     private InMemoryItemRepository itemRepo;
@@ -29,7 +26,6 @@ class RepositoryTest {
         loanRepo = new InMemoryLoanRepository();
     }
 
-    // --- ITEM REPO TESTS ---
     @Test
     void testSaveAndFindItem() {
         Book book = new Book("1", "Title", "Author");
@@ -55,22 +51,19 @@ class RepositoryTest {
         assertFalse(itemRepo.findById("999").isPresent());
     }
 
-    // --- USER REPO TESTS ---
     @Test
     void testSaveAndFindUser() {
-        // Updated test to include password
         User user = new User("u1", "Bob", "secret123");
         userRepo.save(user);
         
         Optional<User> found = userRepo.findById("u1");
         assertTrue(found.isPresent());
         assertEquals("Bob", found.get().getName());
-        assertEquals("secret123", found.get().getPassword()); // Test password storage
+        assertEquals("secret123", found.get().getPassword()); 
     }
     
     @Test
     void testUserPasswordStorage() {
-        // Explicitly testing the new password feature
         User user = new User("u2", "Alice", "myPass");
         userRepo.save(user);
         
@@ -87,7 +80,6 @@ class RepositoryTest {
         assertFalse(userRepo.findById("u1").isPresent());
     }
 
-    // --- LOAN REPO TESTS ---
     @Test
     void testLoanQueries() {
         User user = new User("u1", "Bob", "pass");
@@ -96,13 +88,10 @@ class RepositoryTest {
         
         loanRepo.save(loan);
         
-        // Test findAllActiveLoans
         assertEquals(1, loanRepo.findAllActiveLoans().size());
         
-        // Test findActiveLoansByUser
         assertEquals(1, loanRepo.findActiveLoansByUser(user).size());
         
-        // Test filtering
         User otherUser = new User("u2", "Alice", "pass");
         assertEquals(0, loanRepo.findActiveLoansByUser(otherUser).size());
     }
@@ -112,7 +101,7 @@ class RepositoryTest {
         User user = new User("u1", "Bob", "pass");
         Book book = new Book("1", "T", "A");
         Loan loan = new Loan(book, user, LocalDate.now());
-        loan.returnItem(); // Make it inactive
+        loan.returnItem(); 
         
         loanRepo.save(loan);
         

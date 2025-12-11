@@ -5,9 +5,7 @@ import com.library.domain.Loan;
 import com.library.repository.LoanRepository;
 import com.library.repository.UserRepository;
 
-/**
- * Service for User lifecycle management.
- */
+
 public class UserService {
     private final UserRepository userRepository;
     private final LoanRepository loanRepository;

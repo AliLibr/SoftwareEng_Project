@@ -4,9 +4,11 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Logger;
 import com.library.domain.User;
 
 public class InMemoryUserRepository implements UserRepository {
+    private static final Logger LOGGER = Logger.getLogger(InMemoryUserRepository.class.getName());
     private static final String FILE_NAME = "users.dat";
     private Map<String, User> userStore;
 
@@ -36,7 +38,7 @@ public class InMemoryUserRepository implements UserRepository {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(FILE_NAME))) {
             oos.writeObject(userStore);
         } catch (IOException e) {
-            System.err.println("Could not save users: " + e.getMessage());
+            LOGGER.severe("Could not save users: " + e.getMessage());
         }
     }
 
@@ -47,7 +49,7 @@ public class InMemoryUserRepository implements UserRepository {
             try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
                 return (Map<String, User>) ois.readObject();
             } catch (IOException | ClassNotFoundException e) {
-                System.err.println("Could not load users: " + e.getMessage());
+                LOGGER.severe("Could not load users: " + e.getMessage());
             }
         }
         return new HashMap<>();

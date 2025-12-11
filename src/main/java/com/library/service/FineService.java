@@ -2,9 +2,6 @@ package com.library.service;
 
 import com.library.domain.User;
 
-/**
- * Service for collecting fines.
- */
 public class FineService {
 
     public boolean payFine(User user, double amount) {

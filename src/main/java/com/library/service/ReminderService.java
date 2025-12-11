@@ -11,9 +11,7 @@ import com.library.observer.Observer;
 import com.library.observer.Subject;
 import com.library.repository.LoanRepository;
 
-/**
- * Service for sending overdue reminders. Acts as a Subject.
- */
+
 public class ReminderService implements Subject {
     private final LoanRepository loanRepository;
     private final TimeProvider timeProvider;
