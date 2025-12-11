@@ -2,11 +2,15 @@ package com.library.presentation;
 
 import java.util.List;
 import java.util.Scanner;
+import java.util.logging.Logger;
+
 import com.library.domain.*;
 import com.library.repository.*;
 import com.library.service.*;
 
 public class LibraryCLI {
+
+    private static final Logger LOGGER = Logger.getLogger(LibraryCLI.class.getName());
 
     private static final ItemRepository itemRepo = new InMemoryItemRepository();
     private static final UserRepository userRepo = new InMemoryUserRepository();
@@ -30,7 +34,7 @@ public class LibraryCLI {
     private static User currentUser = null;
 
     public static void main(String[] args) {
-        System.out.println("=== Library Management System ===");
+        LOGGER.info("=== Library Management System ===");
         runMainMenu();
         scanner.close();
     }
@@ -52,7 +56,7 @@ public class LibraryCLI {
         System.out.println("\n--- Main Menu ---");
         System.out.println("1. Admin Login");
         System.out.println("2. User Login");
-        System.out.println("3. Sign Up (New User)"); // New Feature
+        System.out.println("3. Sign Up (New User)");
         System.out.println("0. Exit");
         System.out.print("Choice: ");
         
@@ -62,9 +66,9 @@ public class LibraryCLI {
                 System.out.print("Username: "); String u = scanner.nextLine();
                 System.out.print("Password: "); String p = scanner.nextLine();
                 if (authService.login(u, p)) {
-                    System.out.println("Admin logged in successfully.");
+                    LOGGER.info("Admin logged in successfully.");
                 } else {
-                    System.out.println("Invalid credentials.");
+                    LOGGER.warning("Invalid credentials.");
                 }
                 break;
             case "2":
@@ -76,7 +80,7 @@ public class LibraryCLI {
             case "0":
                 return false;
             default:
-                System.out.println("Invalid choice.");
+                LOGGER.warning("Invalid choice.");
         }
         return true;
     }
@@ -87,7 +91,7 @@ public class LibraryCLI {
         String id = scanner.nextLine();
         
         if (userRepo.findById(id).isPresent()) {
-            System.out.println("Error: User ID already exists.");
+            LOGGER.warning("Error: User ID already exists.");
             return;
         }
         
@@ -98,7 +102,7 @@ public class LibraryCLI {
         
         User newUser = new User(id, name, password);
         userRepo.save(newUser);
-        System.out.println("Sign up successful! Please log in.");
+        LOGGER.info("Sign up successful! Please log in.");
     }
 
     private static void handleUserLogin() {
@@ -111,12 +115,12 @@ public class LibraryCLI {
             user -> {
                 if (user.getPassword().equals(pass)) {
                     currentUser = user;
-                    System.out.println("Welcome back, " + user.getName());
+                    LOGGER.info(() -> "Welcome back, " + user.getName());
                 } else {
-                    System.out.println("Error: Incorrect password.");
+                    LOGGER.warning("Error: Incorrect password.");
                 }
             },
-            () -> System.out.println("Error: User not found.")
+            () -> LOGGER.warning("Error: User not found.")
         );
     }
 
@@ -136,22 +140,22 @@ public class LibraryCLI {
                 System.out.print("Title: "); String title = scanner.nextLine();
                 System.out.print("Author: "); String author = scanner.nextLine();
                 itemRepo.save(new Book(isbn, title, author));
-                System.out.println("Book added.");
+                LOGGER.info("Book added.");
                 break;
             case "2":
                 System.out.print("Serial: "); String serial = scanner.nextLine();
                 System.out.print("Title: "); String t = scanner.nextLine();
                 System.out.print("Artist: "); String artist = scanner.nextLine();
                 itemRepo.save(new CD(serial, t, artist));
-                System.out.println("CD added.");
+                LOGGER.info("CD added.");
                 break;
             case "3":
                 List<String> overdues = loanService.checkOverdueItems();
-                if (overdues.isEmpty()) System.out.println("No items overdue.");
-                else overdues.forEach(System.out::println);
+                if (overdues.isEmpty()) LOGGER.info("No items overdue.");
+                else overdues.forEach(LOGGER::info);
                 break;
             case "4":
-                System.out.println("Sending reminders...");
+                LOGGER.info("Sending reminders...");
                 reminderService.sendOverdueReminders();
                 break;
             case "5":
@@ -162,7 +166,7 @@ public class LibraryCLI {
                 authService.logout();
                 break;
             default:
-                System.out.println("Invalid choice.");
+                LOGGER.warning("Invalid choice.");
         }
     }
 
@@ -181,17 +185,17 @@ public class LibraryCLI {
                 List<LibraryItem> results = itemRepo.searchByTitle(query); 
                 
                 if (results.isEmpty()) {
-                    System.out.println("No items found matching '" + query + "'.");
+                    LOGGER.info(() -> "No items found matching '" + query + "'.");
                 } else {
-                    System.out.println("Found " + results.size() + " item(s):");
-                    results.forEach(System.out::println);
+                    LOGGER.info(() -> "Found " + results.size() + " item(s):");
+                    results.forEach(item -> LOGGER.info(item::toString));
                 }
                 break;
             case "2":
                 System.out.print("Enter Item ID to borrow: ");
                 itemRepo.findById(scanner.nextLine()).ifPresentOrElse(
                     item -> System.out.println(loanService.borrowItem(currentUser, item)),
-                    () -> System.out.println("Item not found.")
+                    () -> LOGGER.warning("Item not found.")
                 );
                 break;
             case "3":
@@ -201,12 +205,12 @@ public class LibraryCLI {
                     try {
                         double amount = Double.parseDouble(scanner.nextLine());
                         if (fineService.payFine(currentUser, amount)) {
-                            System.out.println("Payment accepted. New Balance: " + currentUser.getFinesOwed());
+                            LOGGER.info(() -> "Payment accepted. New Balance: " + currentUser.getFinesOwed());
                         } else {
-                            System.out.println("Payment failed (Invalid amount).");
+                            LOGGER.warning("Payment failed (Invalid amount).");
                         }
                     } catch (NumberFormatException e) {
-                        System.out.println("Invalid number.");
+                        LOGGER.warning("Invalid number.");
                     }
                 }
                 break;
@@ -214,7 +218,7 @@ public class LibraryCLI {
                 currentUser = null;
                 break;
             default:
-                System.out.println("Invalid choice.");
+                LOGGER.warning("Invalid choice.");
         }
     }
 }
