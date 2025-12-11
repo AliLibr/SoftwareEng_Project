@@ -1,23 +1,26 @@
 package com.library.domain;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-/**
- * Represents a library user.
- */
-public class User {
+public class User implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     private String id;
     private String name;
+    private String password; 
     private double finesOwed;
 
-    public User(String id, String name) {
+    public User(String id, String name, String password) {
         this.id = id;
         this.name = name;
+        this.password = password;
         this.finesOwed = 0.0;
     }
 
     public String getId() { return id; }
     public String getName() { return name; }
+    public String getPassword() { return password; }
     public double getFinesOwed() { return finesOwed; }
     public void setFinesOwed(double finesOwed) { this.finesOwed = finesOwed; }
 

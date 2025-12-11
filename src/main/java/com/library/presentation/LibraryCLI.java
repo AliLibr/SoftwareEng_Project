@@ -6,31 +6,23 @@ import com.library.domain.*;
 import com.library.repository.*;
 import com.library.service.*;
 
-/**
- * Main command-line interface.
- */
 public class LibraryCLI {
 
-    // 1. Initialize Repositories
     private static final ItemRepository itemRepo = new InMemoryItemRepository();
     private static final UserRepository userRepo = new InMemoryUserRepository();
     private static final LoanRepository loanRepo = new InMemoryLoanRepository();
 
-    // 2. Initialize Services
     private static final AuthService authService = new AuthService();
     private static final FineService fineService = new FineService();
     private static final TimeProvider timeProvider = new SystemTimeProvider();
     
-    // 3. Initialize Orchestration Services with Dependencies
     private static final LoanService loanService = new LoanService(loanRepo, timeProvider);
     private static final UserService userService = new UserService(userRepo, loanRepo);
     private static final ReminderService reminderService = new ReminderService(loanRepo, timeProvider);
 
-    // 4. Initialize Observers
     private static final EmailNotifier emailNotifier = new EmailNotifier();
 
     static {
-        // Register the observer
         reminderService.registerObserver(emailNotifier);
     }
 
@@ -38,18 +30,9 @@ public class LibraryCLI {
     private static User currentUser = null;
 
     public static void main(String[] args) {
-        seedData();
         System.out.println("=== Library Management System ===");
         runMainMenu();
         scanner.close();
-    }
-
-    private static void seedData() {
-        // Sample Data for testing
-        itemRepo.save(new Book("b1", "Clean Code", "Robert C. Martin"));
-        itemRepo.save(new CD("cd1", "Dark Side of the Moon", "Pink Floyd"));
-        userRepo.save(new User("u1", "Alice Student"));
-        userRepo.save(new User("u2", "Bob Builder"));
     }
 
     private static void runMainMenu() {
@@ -69,6 +52,7 @@ public class LibraryCLI {
         System.out.println("\n--- Main Menu ---");
         System.out.println("1. Admin Login");
         System.out.println("2. User Login");
+        System.out.println("3. Sign Up (New User)"); // New Feature
         System.out.println("0. Exit");
         System.out.print("Choice: ");
         
@@ -84,15 +68,10 @@ public class LibraryCLI {
                 }
                 break;
             case "2":
-                System.out.print("Enter User ID: ");
-                String uid = scanner.nextLine();
-                userRepo.findById(uid).ifPresentOrElse(
-                    user -> {
-                        currentUser = user;
-                        System.out.println("Welcome, " + user.getName());
-                    },
-                    () -> System.out.println("User not found.")
-                );
+                handleUserLogin();
+                break;
+            case "3":
+                handleUserSignUp();
                 break;
             case "0":
                 return false;
@@ -100,6 +79,45 @@ public class LibraryCLI {
                 System.out.println("Invalid choice.");
         }
         return true;
+    }
+
+    private static void handleUserSignUp() {
+        System.out.println("\n--- User Sign Up ---");
+        System.out.print("Enter Desired User ID: ");
+        String id = scanner.nextLine();
+        
+        if (userRepo.findById(id).isPresent()) {
+            System.out.println("Error: User ID already exists.");
+            return;
+        }
+        
+        System.out.print("Enter Name: ");
+        String name = scanner.nextLine();
+        System.out.print("Enter Password: ");
+        String password = scanner.nextLine();
+        
+        User newUser = new User(id, name, password);
+        userRepo.save(newUser);
+        System.out.println("Sign up successful! Please log in.");
+    }
+
+    private static void handleUserLogin() {
+        System.out.print("Enter User ID: ");
+        String uid = scanner.nextLine();
+        System.out.print("Enter Password: ");
+        String pass = scanner.nextLine();
+        
+        userRepo.findById(uid).ifPresentOrElse(
+            user -> {
+                if (user.getPassword().equals(pass)) {
+                    currentUser = user;
+                    System.out.println("Welcome back, " + user.getName());
+                } else {
+                    System.out.println("Error: Incorrect password.");
+                }
+            },
+            () -> System.out.println("Error: User not found.")
+        );
     }
 
     private static void handleAdminMenu() {
@@ -128,7 +146,6 @@ public class LibraryCLI {
                 System.out.println("CD added.");
                 break;
             case "3":
-                // Changed 'var' to 'List<String>' for Java 8 compatibility
                 List<String> overdues = loanService.checkOverdueItems();
                 if (overdues.isEmpty()) System.out.println("No items overdue.");
                 else overdues.forEach(System.out::println);
@@ -151,7 +168,7 @@ public class LibraryCLI {
 
     private static void handleUserMenu() {
         System.out.println("\n--- User Menu (" + currentUser.getName() + ") ---");
-        System.out.println("1. Search Item");
+        System.out.println("1. Search Item (US1.4)");
         System.out.println("2. Borrow Item");
         System.out.println("3. Pay Fine");
         System.out.println("4. Logout");
@@ -159,14 +176,19 @@ public class LibraryCLI {
 
         switch (scanner.nextLine()) {
             case "1":
-                System.out.print("Search Title: ");
-                // Changed 'var' to 'List<LibraryItem>' for Java 8 compatibility
-                List<LibraryItem> results = itemRepo.searchByTitle(scanner.nextLine());
-                if (results.isEmpty()) System.out.println("No items found.");
-                else results.forEach(System.out::println);
+                System.out.print("Enter search term (Title/Author/ID): ");
+                String query = scanner.nextLine();
+                List<LibraryItem> results = itemRepo.searchByTitle(query); 
+                
+                if (results.isEmpty()) {
+                    System.out.println("No items found matching '" + query + "'.");
+                } else {
+                    System.out.println("Found " + results.size() + " item(s):");
+                    results.forEach(System.out::println);
+                }
                 break;
             case "2":
-                System.out.print("Enter Item ID: ");
+                System.out.print("Enter Item ID to borrow: ");
                 itemRepo.findById(scanner.nextLine()).ifPresentOrElse(
                     item -> System.out.println(loanService.borrowItem(currentUser, item)),
                     () -> System.out.println("Item not found.")
@@ -179,7 +201,7 @@ public class LibraryCLI {
                     try {
                         double amount = Double.parseDouble(scanner.nextLine());
                         if (fineService.payFine(currentUser, amount)) {
-                            System.out.println("Payment accepted.");
+                            System.out.println("Payment accepted. New Balance: " + currentUser.getFinesOwed());
                         } else {
                             System.out.println("Payment failed (Invalid amount).");
                         }

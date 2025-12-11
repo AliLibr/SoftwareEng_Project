@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 
 import com.library.domain.*;
 import com.library.repository.*;
-import com.library.strategy.BookFineStrategy;
 
 /**
  * Tests for the Repository Layer (Data Storage).
@@ -59,17 +58,29 @@ class RepositoryTest {
     // --- USER REPO TESTS ---
     @Test
     void testSaveAndFindUser() {
-        User user = new User("u1", "Bob");
+        // Updated test to include password
+        User user = new User("u1", "Bob", "secret123");
         userRepo.save(user);
         
         Optional<User> found = userRepo.findById("u1");
         assertTrue(found.isPresent());
         assertEquals("Bob", found.get().getName());
+        assertEquals("secret123", found.get().getPassword()); // Test password storage
+    }
+    
+    @Test
+    void testUserPasswordStorage() {
+        // Explicitly testing the new password feature
+        User user = new User("u2", "Alice", "myPass");
+        userRepo.save(user);
+        
+        User loadedUser = userRepo.findById("u2").orElseThrow(AssertionError::new);
+        assertEquals("myPass", loadedUser.getPassword());
     }
     
     @Test
     void testDeleteUser() {
-        User user = new User("u1", "Bob");
+        User user = new User("u1", "Bob", "pass");
         userRepo.save(user);
         userRepo.delete(user);
         
@@ -79,7 +90,7 @@ class RepositoryTest {
     // --- LOAN REPO TESTS ---
     @Test
     void testLoanQueries() {
-        User user = new User("u1", "Bob");
+        User user = new User("u1", "Bob", "pass");
         Book book = new Book("1", "T", "A");
         Loan loan = new Loan(book, user, LocalDate.now());
         
@@ -92,13 +103,13 @@ class RepositoryTest {
         assertEquals(1, loanRepo.findActiveLoansByUser(user).size());
         
         // Test filtering
-        User otherUser = new User("u2", "Alice");
+        User otherUser = new User("u2", "Alice", "pass");
         assertEquals(0, loanRepo.findActiveLoansByUser(otherUser).size());
     }
     
     @Test
     void testInactiveLoansAreIgnored() {
-        User user = new User("u1", "Bob");
+        User user = new User("u1", "Bob", "pass");
         Book book = new Book("1", "T", "A");
         Loan loan = new Loan(book, user, LocalDate.now());
         loan.returnItem(); // Make it inactive

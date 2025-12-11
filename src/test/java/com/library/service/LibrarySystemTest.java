@@ -87,12 +87,37 @@ class LibrarySystemTest {
         assertFalse(authService.isAdminLoggedIn());
     }
 
+    // New Test: Verify User login functionality (ID + Password check)
+    @Test
+    void testSecureUserLogin() {
+        // Arrange
+        String userId = "u10";
+        String password = "securepass";
+        User mockUser = new User(userId, "Secure User", password);
+        
+        // Mock the repository to return the user when findById is called
+        when(userRepo.findById(userId)).thenReturn(Optional.of(mockUser));
+        
+        // Act (Simulate login attempt in CLI using UserService)
+        // Since we don't have a separate UserLoginService, we test the logic here:
+        
+        // Success case
+        Optional<User> foundUser = userRepo.findById(userId);
+        assertTrue(foundUser.isPresent());
+        assertTrue(foundUser.get().getPassword().equals(password), "Password should match");
+        
+        // Failure case (wrong password check)
+        Optional<User> foundUserWrongPass = userRepo.findById(userId);
+        assertTrue(foundUserWrongPass.isPresent());
+        assertFalse(foundUserWrongPass.get().getPassword().equals("wrongpass"), "Wrong password should fail");
+    }
+
     // ==========================================
     // 2. FINE SERVICE TESTS
     // ==========================================
     @Test
     void testPayFineFully() {
-        User user = new User("u1", "Debtor");
+        User user = new User("u1", "Debtor", "testpass"); // Updated
         user.setFinesOwed(50.0);
 
         boolean success = fineService.payFine(user, 50.0);
@@ -103,7 +128,7 @@ class LibrarySystemTest {
 
     @Test
     void testPayFinePartially() {
-        User user = new User("u1", "Debtor");
+        User user = new User("u1", "Debtor", "testpass"); // Updated
         user.setFinesOwed(100.0);
 
         boolean success = fineService.payFine(user, 40.0);
@@ -114,19 +139,32 @@ class LibrarySystemTest {
 
     @Test
     void testPayFineInvalidAmount() {
-        User user = new User("u1", "Debtor");
+        User user = new User("u1", "Debtor", "testpass"); // Updated
         user.setFinesOwed(50.0);
 
         assertFalse(fineService.payFine(user, -10.0), "Should fail for negative amount");
         assertEquals(50.0, user.getFinesOwed()); // Balance unchanged
     }
+    
+    // New Test: Ensures user balance doesn't go below zero when overpaying
+    @Test
+    void testPayFineAmountExceedsDebt() {
+        User user = new User("u1", "Debtor", "testpass");
+        user.setFinesOwed(20.0);
+
+        boolean success = fineService.payFine(user, 50.0);
+        
+        assertTrue(success, "Payment should be accepted even if amount exceeds debt");
+        assertEquals(0.0, user.getFinesOwed(), 0.01, "Final fines owed must be 0.0, not negative");
+    }
+
 
     // ==========================================
     // 3. LOAN & STRATEGY TESTS
     // ==========================================
     @Test
     void testBorrowBookCalculatesDueDate() {
-        User user = new User("u1", "Alice");
+        User user = new User("u1", "Alice", "testpass"); // Updated
         Book book = new Book("isbn1", "Java Book", "Author");
         LocalDate today = LocalDate.of(2023, 1, 1);
         when(timeProvider.getDate()).thenReturn(today);
@@ -144,7 +182,7 @@ class LibrarySystemTest {
 
     @Test
     void testBorrowCDCalculatesDueDate() {
-        User user = new User("u1", "Alice");
+        User user = new User("u1", "Alice", "testpass"); // Updated
         CD cd = new CD("cd1", "Music", "Artist");
         LocalDate today = LocalDate.of(2023, 1, 1);
         when(timeProvider.getDate()).thenReturn(today);
@@ -159,7 +197,7 @@ class LibrarySystemTest {
 
     @Test
     void testBorrowBlockedIfItemBorrowed() {
-        User user = new User("u1", "Alice");
+        User user = new User("u1", "Alice", "testpass"); // Updated
         Book book = new Book("isbn1", "Java", "Auth");
         book.setBorrowed(true); // Already borrowed
 
@@ -168,19 +206,23 @@ class LibrarySystemTest {
         verify(loanRepo, never()).save(any());
     }
 
+    // New Test: Strengthens verification that LoanRepo.save is NEVER called if fines exist
     @Test
-    void testBorrowBlockedIfFinesExist() {
-        User user = new User("u1", "Debtor");
+    void testBorrowBlockedIfFinesExistVerification() {
+        User user = new User("u1", "Debtor", "testpass"); // Updated
         user.setFinesOwed(10.0);
         Book book = new Book("1", "B", "A");
 
         String result = loanService.borrowItem(user, book);
         assertTrue(result.contains("unpaid fines"));
+        
+        // Explicit Mockito verification: ensure the save method was never called
+        verify(loanRepo, never()).save(any());
     }
 
     @Test
     void testBorrowBlockedIfOverdueExists() {
-        User user = new User("u1", "Alice");
+        User user = new User("u1", "Alice", "testpass"); // Updated
         Book book = new Book("1", "B", "A");
         
         LocalDate today = LocalDate.of(2023, 2, 1);
@@ -193,6 +235,8 @@ class LibrarySystemTest {
 
         String result = loanService.borrowItem(user, book);
         assertTrue(result.contains("overdue items"));
+        // VERIFICATION: Check that no loan was saved
+        verify(loanRepo, never()).save(any());
     }
 
     @Test
@@ -200,7 +244,7 @@ class LibrarySystemTest {
         LocalDate today = LocalDate.of(2023, 2, 1);
         when(timeProvider.getDate()).thenReturn(today);
 
-        User user = new User("u1", "Alice");
+        User user = new User("u1", "Alice", "testpass"); // Updated
         Book book = new Book("1", "B", "A");
         Loan loan = new Loan(book, user, LocalDate.of(2023, 1, 1)); // Due Jan 29
 
@@ -223,7 +267,7 @@ class LibrarySystemTest {
         LocalDate today = LocalDate.of(2023, 2, 1);
         when(timeProvider.getDate()).thenReturn(today);
         
-        User user = new User("u1", "Alice");
+        User user = new User("u1", "Alice", "testpass"); // Updated
         Book book = new Book("1", "B", "A");
         Loan loan = new Loan(book, user, LocalDate.of(2023, 1, 1)); // Overdue
 
@@ -240,7 +284,7 @@ class LibrarySystemTest {
     // ==========================================
     @Test
     void testUnregisterSuccess() {
-        User user = new User("u1", "Clean");
+        User user = new User("u1", "Clean", "testpass"); // Updated
         when(userRepo.findById("u1")).thenReturn(Optional.of(user));
         when(loanRepo.findActiveLoansByUser(user)).thenReturn(Collections.emptyList());
 
@@ -251,12 +295,28 @@ class LibrarySystemTest {
 
     @Test
     void testUnregisterFailFines() {
-        User user = new User("u1", "Debtor");
+        User user = new User("u1", "Debtor", "testpass"); // Updated
         user.setFinesOwed(5.0);
         when(userRepo.findById("u1")).thenReturn(Optional.of(user));
 
         String result = userService.unregisterUser("u1");
         assertTrue(result.contains("fines"));
+        verify(userRepo, never()).delete(any());
+    }
+    
+    // New Test: Ensures Unregister is blocked if the user has active loans (even if fines are zero)
+    @Test
+    void testUserUnregisterBlockedByActiveLoan() {
+        User user = new User("u1", "Reader", "testpass");
+        user.setFinesOwed(0.0); // No fines
+        Loan activeLoan = mock(Loan.class); // Mocking an active loan object
+        
+        when(userRepo.findById("u1")).thenReturn(Optional.of(user));
+        when(loanRepo.findActiveLoansByUser(user)).thenReturn(Collections.singletonList(activeLoan));
+
+        String result = userService.unregisterUser("u1");
+
+        assertTrue(result.contains("Error: Cannot unregister. User has active loans."));
         verify(userRepo, never()).delete(any());
     }
 }
