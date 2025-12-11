@@ -11,7 +11,9 @@ import com.library.service.*;
 public class LibraryCLI {
 
     private static final Logger LOGGER = Logger.getLogger(LibraryCLI.class.getName());
-    private static final String CHOICE_PROMPT = "Choice: "; 
+    private static final String CHOICE_PROMPT = "Choice: ";
+    private static final String INVALID_CHOICE_MSG = "Invalid choice.";
+
     private static final ItemRepository itemRepo = new InMemoryItemRepository();
     private static final UserRepository userRepo = new InMemoryUserRepository();
     private static final LoanRepository loanRepo = new InMemoryLoanRepository();
@@ -62,7 +64,7 @@ public class LibraryCLI {
         LOGGER.info("2. User Login");
         LOGGER.info("3. Sign Up (New User)");
         LOGGER.info("0. Exit");
-        printPrompt(CHOICE_PROMPT); 
+        printPrompt(CHOICE_PROMPT);
         
         String choice = scanner.nextLine();
         switch (choice) {
@@ -84,7 +86,7 @@ public class LibraryCLI {
             case "0":
                 return false;
             default:
-                LOGGER.warning("Invalid choice.");
+                LOGGER.warning(INVALID_CHOICE_MSG);
         }
         return true;
     }
@@ -136,7 +138,7 @@ public class LibraryCLI {
         LOGGER.info("4. Send Reminders");
         LOGGER.info("5. Unregister User");
         LOGGER.info("6. Logout");
-        printPrompt(CHOICE_PROMPT); 
+        printPrompt(CHOICE_PROMPT);
 
         switch (scanner.nextLine()) {
             case "1":
@@ -170,7 +172,7 @@ public class LibraryCLI {
                 authService.logout();
                 break;
             default:
-                LOGGER.warning("Invalid choice.");
+                LOGGER.warning(INVALID_CHOICE_MSG);
         }
     }
 
@@ -180,7 +182,7 @@ public class LibraryCLI {
         LOGGER.info("2. Borrow Item");
         LOGGER.info("3. Pay Fine");
         LOGGER.info("4. Logout");
-        printPrompt(CHOICE_PROMPT); 
+        printPrompt(CHOICE_PROMPT);
 
         switch (scanner.nextLine()) {
             case "1":
@@ -222,7 +224,7 @@ public class LibraryCLI {
                 currentUser = null;
                 break;
             default:
-                LOGGER.warning("Invalid choice.");
+                LOGGER.warning(INVALID_CHOICE_MSG);
         }
     }
 }
