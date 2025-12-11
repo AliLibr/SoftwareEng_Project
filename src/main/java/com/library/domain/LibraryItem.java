@@ -1,17 +1,17 @@
 package com.library.domain;
 
+import java.io.Serializable;
 import com.library.strategy.FineStrategy;
 
-/**
- * Abstract base class for all library items.
- */
-public abstract class LibraryItem {
+public abstract class LibraryItem implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     protected String id;
     protected String title;
     protected boolean isBorrowed;
     protected FineStrategy fineStrategy;
 
-    public LibraryItem(String id, String title, FineStrategy fineStrategy) {
+    protected LibraryItem(String id, String title, FineStrategy fineStrategy) {
         this.id = id;
         this.title = title;
         this.fineStrategy = fineStrategy;

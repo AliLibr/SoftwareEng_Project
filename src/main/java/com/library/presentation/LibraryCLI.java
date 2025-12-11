@@ -36,7 +36,7 @@ public class LibraryCLI {
     private static User currentUser = null;
 
     private static void printPrompt(String message) {
-        System.out.print(message);
+        LOGGER.info(message);
     }
 
     public static void main(String[] args) {

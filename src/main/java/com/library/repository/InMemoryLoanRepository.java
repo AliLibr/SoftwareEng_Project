@@ -39,7 +39,7 @@ public class InMemoryLoanRepository implements LoanRepository {
 
     private void saveToFile() {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(FILE_NAME))) {
-            oos.writeObject(loanStore);
+            oos.writeObject(new ArrayList<>(loanStore));
         } catch (IOException e) {
             LOGGER.severe("Could not save loans: " + e.getMessage());
         }
