@@ -2,10 +2,10 @@ package com.library.domain;
 
 import com.library.strategy.BookFineStrategy;
 
-/**
- * Represents a Book entity.
- */
 public class Book extends LibraryItem {
+    private static final long serialVersionUID = 1L;
+    public static final int BOOK_LOAN_PERIOD_DAYS = 28;
+    
     private String author;
 
     public Book(String isbn, String title, String author) {
@@ -17,7 +17,7 @@ public class Book extends LibraryItem {
 
     @Override
     public int getLoanPeriodDays() {
-        return 28;
+        return BOOK_LOAN_PERIOD_DAYS;
     }
 
     @Override

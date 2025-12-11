@@ -2,10 +2,10 @@ package com.library.domain;
 
 import com.library.strategy.CDFineStrategy;
 
-/**
- * Represents a CD entity.
- */
 public class CD extends LibraryItem {
+    private static final long serialVersionUID = 1L;
+    public static final int CD_LOAN_PERIOD_DAYS = 7;
+    
     private String artist;
 
     public CD(String serialNumber, String title, String artist) {
@@ -17,7 +17,7 @@ public class CD extends LibraryItem {
 
     @Override
     public int getLoanPeriodDays() {
-        return 7;
+        return CD_LOAN_PERIOD_DAYS;
     }
 
     @Override
