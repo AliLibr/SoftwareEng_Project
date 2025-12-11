@@ -2,9 +2,7 @@ package com.library.domain;
 
 import java.time.LocalDate;
 
-/**
- * Represents a loan transaction.
- */
+
 public class Loan {
     private LibraryItem item;
     private User user;

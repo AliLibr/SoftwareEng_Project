@@ -31,9 +31,10 @@ class RepositoryTest {
         Book book = new Book("1", "Title", "Author");
         itemRepo.save(book);
         
-        Optional<LibraryItem> found = itemRepo.findById("1");
-        assertTrue(found.isPresent());
-        assertEquals("Title", found.get().getTitle());
+        // REFACTOR: Use orElseThrow() for cleaner assertion of item presence and retrieval
+        LibraryItem found = itemRepo.findById("1")
+                                    .orElseThrow(() -> new AssertionError("Item not found"));
+        assertEquals("Title", found.getTitle());
     }
 
     @Test
@@ -56,10 +57,11 @@ class RepositoryTest {
         User user = new User("u1", "Bob", "secret123");
         userRepo.save(user);
         
-        Optional<User> found = userRepo.findById("u1");
-        assertTrue(found.isPresent());
-        assertEquals("Bob", found.get().getName());
-        assertEquals("secret123", found.get().getPassword()); 
+        // REFACTOR: Use orElseThrow() for cleaner assertion of user presence and retrieval
+        User found = userRepo.findById("u1")
+                             .orElseThrow(() -> new AssertionError("User not found"));
+        assertEquals("Bob", found.getName());
+        assertEquals("secret123", found.getPassword()); 
     }
     
     @Test
